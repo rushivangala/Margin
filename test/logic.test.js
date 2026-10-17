@@ -112,4 +112,19 @@ module.exports = {
     assert.strictEqual(L.rawOffset(raw, L.clean(raw).indexOf('smelled')), raw.indexOf('smelled'));
     assert.strictEqual(L.wordCount([['Åsa sa: – Här är tjugo-två ord.']]), 6);
   },
+
+  'notes: Daybook text and Markdown export'() {
+    const book = { title: 'The Keeper', author: 'Ada Testwright' };
+    const h1 = { c: 1, s: { p: 2, o: 0 }, e: { p: 2, o: 5 }, text: 'harbour smelled\nof tar', note: ' First impression. ', chapter: 'Chapter 1', color: 'green' };
+    const h0 = { c: 0, s: { p: 0, o: 0 }, e: { p: 0, o: 3 }, text: 'Edith', note: '', chapter: 'Prologue', color: 'yellow' };
+    assert.strictEqual(L.highlightText(h1, book), '> harbour smelled\n> of tar\n\nFirst impression.\n\n— The Keeper, Ada Testwright · Chapter 1\n#reading');
+    const md = L.notebookMarkdown(book, [h1, h0], [{ chapter: 'Chapter 1', text: 'A bookmark text' }], new Date(2026, 9, 17).getTime());
+    assert.ok(md.startsWith('# The Keeper\n\n*Ada Testwright*\n\n2 highlights · 1 note · exported from Margin on 2026-10-17\n'), md);
+    assert.ok(md.indexOf('## Prologue') < md.indexOf('## Chapter 1'), 'reading order');
+    assert.ok(md.includes('> harbour smelled\n> of tar\n\nFirst impression.\n\n<sub>Green</sub>'));
+    assert.ok(md.includes('## Bookmarks\n\n- Chapter 1: “A bookmark text”'));
+    const all = L.allNotesMarkdown([{ book, hl: [h0], bm: [] }, { book: { title: 'Empty' }, hl: [], bm: [] }]);
+    assert.ok(all.startsWith('# Reading notes\n\n## The Keeper') && !all.includes('Empty'), all);
+    assert.strictEqual(L.fileName('A/B: "C"?'), 'A B C');
+  },
 };

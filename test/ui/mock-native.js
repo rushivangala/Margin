@@ -30,6 +30,10 @@
     importBooks: function (token) { reply({ type: 'import', token: token, ok: false }); },
     requestAllFiles: function () { M.calls.push('requestAllFiles'); },
     forgetCover: function () {},
+    hasDaybook: function () { return M.daybook !== false; },
+    toDaybook: function (title, text, key, token) { M.sent.push({ title: title, text: text, key: key }); reply({ type: 'daybook', token: token, ok: M.daybook !== false }); },
+    shareText: function (s, t) { M.shared = { subject: s, text: t }; },
+    saveText: function (name, mime, text, token) { M.saved = { name: name, mime: mime, text: text }; reply({ type: 'save', token: token, ok: true }); },
   };
   window.KitNative = undefined;
 })();

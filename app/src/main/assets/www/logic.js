@@ -356,6 +356,52 @@
     return n;
   }
 
+  // ---------------------------------------------------------------- notes out of the app
+  var COLOR_NAMES = { yellow: 'Yellow', green: 'Green', blue: 'Blue', pink: 'Pink' };
+  function byline(book) { return (book.title || '') + (book.author ? ', ' + book.author : ''); }
+  function quoteLines(t) { return String(t || '').split(/\n+/).map(function (l) { return '> ' + l; }).join('\n'); }
+
+  /* One highlight as plain text, for Daybook or the share sheet. */
+  function highlightText(h, book) {
+    var out = quoteLines(h.text);
+    if (h.note) out += '\n\n' + h.note.trim();
+    out += '\n\n— ' + byline(book) + (h.chapter ? ' · ' + h.chapter : '') + '\n#reading';
+    return out;
+  }
+
+  /* A book's notebook as Markdown: highlights grouped by chapter in reading order, then bookmarks. */
+  function notebookMarkdown(book, highlights, bookmarks, now) {
+    var d = new Date(now || Date.now());
+    var date = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+    var md = '# ' + (book.title || 'Notes') + '\n\n';
+    if (book.author) md += '*' + book.author + '*\n\n';
+    md += (highlights.length ? plural(highlights.length, 'highlight') : 'No highlights') +
+      (highlights.filter(function (h) { return h.note; }).length ? ' · ' + plural(highlights.filter(function (h) { return h.note; }).length, 'note') : '') +
+      ' · exported from Margin on ' + date + '\n';
+    var last = null;
+    (highlights || []).slice().sort(function (a, b) { return comparePos({ c: a.c, p: a.s.p, o: a.s.o }, { c: b.c, p: b.s.p, o: b.s.o }); }).forEach(function (h) {
+      var ch = h.chapter || '';
+      if (ch !== last) { md += '\n## ' + (ch || 'Highlights') + '\n'; last = ch; }
+      md += '\n' + quoteLines(h.text) + '\n';
+      if (h.note) md += '\n' + h.note.trim() + '\n';
+      if (h.color && h.color !== 'yellow') md += '\n<sub>' + (COLOR_NAMES[h.color] || h.color) + '</sub>\n';
+    });
+    if (bookmarks && bookmarks.length) {
+      md += '\n## Bookmarks\n\n';
+      bookmarks.forEach(function (m) { md += '- ' + (m.chapter ? m.chapter + ': ' : '') + (m.text ? '“' + m.text.slice(0, 120) + (m.text.length > 120 ? '…' : '') + '”' : 'bookmark') + '\n'; });
+    }
+    return md;
+  }
+
+  /* All books' notebooks in one Markdown file. books: [{book, hl, bm}] */
+  function allNotesMarkdown(list, now) {
+    return '# Reading notes\n\n' + list.filter(function (x) { return x.hl.length || x.bm.length; }).map(function (x) {
+      return notebookMarkdown(x.book, x.hl, x.bm, now).replace(/^# /, '## ').replace(/\n## /g, '\n### ');
+    }).join('\n---\n\n');
+  }
+
+  function fileName(s) { return String(s || 'notes').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || 'notes'; }
+
   // ---------------------------------------------------------------- formatting
   function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
   function minutes(m) {
@@ -371,6 +417,7 @@
     lensOf: lensOf, fractionAt: fractionAt, positionAt: positionAt, comparePos: comparePos, charsBefore: charsBefore,
     esc: esc, textChapters: textChapters, markdown: markdown, markdownChapters: markdownChapters, chapterDoc: chapterDoc, textChapterHtml: textChapterHtml,
     pdfParagraphs: pdfParagraphs, reflowLines: reflowLines,
+    highlightText: highlightText, notebookMarkdown: notebookMarkdown, allNotesMarkdown: allNotesMarkdown, fileName: fileName,
     rawOffset: rawOffset, fold: fold, searchBook: searchBook, snippet: snippet, words: words, wordCount: wordCount,
     plural: plural, minutes: minutes, dayKey: dayKey,
   };

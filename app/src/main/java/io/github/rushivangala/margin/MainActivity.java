@@ -48,6 +48,7 @@ import io.github.rushivangala.kit.KitShell;
 public final class MainActivity extends Activity {
     static final String PREFS = "margin";
     static final int REQ_IMPORT = 11;
+    static final int REQ_SAVE = 12;
 
     /** The page's own CSP: like the kit's, but it may frame book chapters from its own origin and fetch them for search. */
     static final String PAGE_CSP = "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self';"
@@ -59,6 +60,8 @@ public final class MainActivity extends Activity {
     final Handler main = new Handler(Looper.getMainLooper());
     private volatile String launch;
     private String importToken;
+    private String saveToken;
+    private String saveTextBody;
     volatile boolean reading;
     volatile boolean volumeKeys = true;
 
@@ -313,9 +316,51 @@ public final class MainActivity extends Activity {
         }
     }
 
+    void saveText(final String name, final String mime, final String text, final String token) {
+        main.post(new Runnable() {
+            @Override
+            public void run() {
+                saveToken = token;
+                saveTextBody = text;
+                Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                        .setType(mime == null || mime.isEmpty() ? "text/markdown" : mime).putExtra(Intent.EXTRA_TITLE, name);
+                try {
+                    startActivityForResult(i, REQ_SAVE);
+                } catch (Exception e) {
+                    saveToken = null;
+                    saveTextBody = null;
+                    emitResult("save", token, false, "\"error\":\"No file picker on this phone\"");
+                }
+            }
+        });
+    }
+
     @Override
     protected void onActivityResult(int req, int result, final Intent data) {
         super.onActivityResult(req, result, data);
+        if (req == REQ_SAVE) {
+            final String token = saveToken, body = saveTextBody;
+            saveToken = null;
+            saveTextBody = null;
+            if (token == null) return;
+            if (result != RESULT_OK || data == null || data.getData() == null || body == null) {
+                emitResult("save", token, false, null);
+                return;
+            }
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try (java.io.OutputStream out = getContentResolver().openOutputStream(data.getData(), "wt")) {
+                        if (out == null) throw new java.io.IOException("Could not write the file");
+                        out.write(body.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                        emitResult("save", token, true, null);
+                    } catch (Exception e) {
+                        emitResult("save", token, false, "\"error\":" + JSONObject.quote(String.valueOf(e.getMessage())));
+                    }
+                }
+            }, "save").start();
+            return;
+        }
         if (req != REQ_IMPORT) return;
         final String token = importToken;
         importToken = null;

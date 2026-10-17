@@ -322,6 +322,70 @@ const scenarios = {
     await ctx.close();
   },
 
+  async 'notebook and daybook'(b, port, scheme) {
+    const { page, ctx, errors } = await newPage(b, port, scheme);
+    const id = await openBook(page, 'The Keeper of Harwick Light');
+    const f = frame(page);
+    const select = async (phrase) => {
+      await f.evaluate((ph) => {
+        const p = [...document.querySelectorAll('p')].find((x) => x.textContent.includes(ph));
+        const t = p.firstChild, i = t.data.indexOf(ph);
+        const r = document.createRange(); r.setStart(t, i); r.setEnd(t, i + ph.length);
+        const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      }, phrase);
+      await page.waitForSelector('.selbar', { timeout: 3000 });
+    };
+    await select('one trunk and a letter');
+    await page.click('[data-a="selDaybook"]');
+    await page.waitForTimeout(300);
+    const sent = await page.evaluate(() => window.__mock.sent);
+    check(sent.length === 1 && sent[0].title === 'The Keeper of Harwick Light' && sent[0].text.startsWith('> one trunk and a letter') && sent[0].text.includes('#reading'), 'highlight sent to Daybook ' + JSON.stringify(sent));
+    check(await page.evaluate((i) => window.app.bookDoc(i).hl.length === 1 && !!window.app.bookDoc(i).hl[0].daybook, id), 'and saved as a highlight');
+    await select('Captain Rowe met her');
+    await page.click('.selbar [data-v="pink"]');
+    await page.waitForTimeout(200);
+    // the notebook for this book
+    await tapReader(page, 200, 450);
+    await page.click('[data-a="notebook"]');
+    await page.waitForSelector('.hl-card');
+    await shot(page, 'notebook-book-' + scheme);
+    check(await page.$$eval('.hl-card', (e) => e.length) === 2, 'two highlights in the notebook');
+    await page.click('[data-a="nbFilter"][data-v="pink"]');
+    check(await page.$$eval('.hl-card', (e) => e.length) === 1, 'colour filter');
+    await page.click('.hl-card');
+    await page.waitForSelector('.k-sheet [data-a="hlEditNote"]');
+    await shot(page, 'notebook-sheet-' + scheme);
+    await page.click('[data-a="hlEditNote"]');
+    await page.fill('#mfield', 'He carries the trunk without asking.');
+    await page.click('[data-a="modalOk"]');
+    await page.waitForTimeout(200);
+    await page.mouse.click(200, 120); // the scrim above the sheet
+    await page.waitForTimeout(200);
+    await page.click('[data-a="exportNotes"]');
+    await page.waitForTimeout(200);
+    const saved = await page.evaluate(() => window.__mock.saved);
+    check(saved && saved.name === 'The Keeper of Harwick Light — notes.md' && saved.text.includes('He carries the trunk without asking.'), 'markdown export ' + JSON.stringify(saved && saved.name));
+    // all notes from the library
+    await page.evaluate(() => { window.app.back(); window.app.back(); });
+    await page.waitForTimeout(200);
+    await page.click('[data-a="allNotes"]');
+    await page.waitForSelector('.hl-card');
+    await shot(page, 'notebook-all-' + scheme);
+    await page.click('[data-a="notesToDaybook"]');
+    await page.click('[data-a="modalOk"]');
+    await page.waitForTimeout(300);
+    const sent2 = await page.evaluate(() => window.__mock.sent);
+    check(sent2.length === 2 && sent2[1].key === 'margin-notes-' + id, 'whole notebook sent with a key ' + JSON.stringify(sent2.map((x) => x.key)));
+    // Daybook missing: falls back to the share sheet
+    await page.evaluate(() => { window.__mock.daybook = false; });
+    await page.click('[data-a="notesToDaybook"]');
+    await page.click('[data-a="modalOk"]');
+    await page.waitForTimeout(300);
+    check(await page.evaluate(() => !!window.__mock.shared), 'share sheet when Daybook is not there');
+    check(!errors.length, 'no page errors: ' + errors.join(' | '));
+    await ctx.close();
+  },
+
   async 'settings'(b, port, scheme) {
     const { page, ctx, errors } = await newPage(b, port, scheme);
     await page.click('[data-a="go"][data-to="settings"]');

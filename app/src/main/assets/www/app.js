@@ -260,7 +260,7 @@
       if (S.searching) {
         h += '<header class="k-head k-small"><button type="button" class="k-icb" data-a="back" aria-label="Close search">' + Kit.icon('back') + '</button><div class="k-ht"><input id="q" class="k-field" type="search" placeholder="Title, author or series" value="' + esc(S.query) + '" autocomplete="off" enterkeyhint="search"></div></header>';
       } else {
-        h += header('Library', sub, icb('search', Kit.icon('search'), 'Search books') + icb('importBooks', Kit.icon('plus'), 'Add books') + icb('go', Kit.icon('tune'), 'Settings', ' data-to="settings"'));
+        h += header('Library', sub, icb('search', Kit.icon('search'), 'Search books') + (app.libraryActions || []).map(function (f) { return f(); }).join('') + icb('importBooks', Kit.icon('plus'), 'Add books') + icb('go', Kit.icon('tune'), 'Settings', ' data-to="settings"'));
       }
       h += '<div class="scroll" data-k="library" id="sc">';
       if (!books.length) return h + emptyLibrary() + '</div>';

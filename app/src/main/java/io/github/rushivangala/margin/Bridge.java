@@ -170,6 +170,45 @@ public final class Bridge {
         a.setReading(on, volumeKeys);
     }
 
+    // ---------------------------------------------------------------- the suite and sharing
+
+    @JavascriptInterface
+    public boolean hasDaybook() {
+        return Suite.installed(a, Suite.DAYBOOK);
+    }
+
+    /** Sends a note to Daybook; replies {ok} by token. key: a note with the same key is replaced. */
+    @JavascriptInterface
+    public void toDaybook(final String title, final String text, final String key, final String token) {
+        a.main.post(new Runnable() {
+            @Override
+            public void run() {
+                Suite.addNote(a, title, text, key, new Suite.Done() {
+                    @Override
+                    public void done(boolean ok) {
+                        a.emitResult("daybook", token, ok, null);
+                    }
+                });
+            }
+        });
+    }
+
+    @JavascriptInterface
+    public void shareText(final String subject, final String text) {
+        a.main.post(new Runnable() {
+            @Override
+            public void run() {
+                Suite.shareText(a, subject, text);
+            }
+        });
+    }
+
+    /** Saves text as a file the reader picks the place for (Markdown export). Replies {ok} by token. */
+    @JavascriptInterface
+    public void saveText(String name, String mime, String text, String token) {
+        a.saveText(name, mime, text, token);
+    }
+
     // ---------------------------------------------------------------- documents (JSON owned by the web UI)
 
     @JavascriptInterface

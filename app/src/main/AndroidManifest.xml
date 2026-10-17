@@ -6,6 +6,19 @@
          folder you choose. Margin only reads those folders and writes imported books to Books. -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
+    <!-- Signature permission shared by the suite: only apps signed with the same key may use it.
+         Margin holds it to send notes to Daybook; Daybook declares it too. -->
+    <permission
+        android:name="io.github.rushivangala.permission.SUITE"
+        android:description="@string/suite_permission_desc"
+        android:label="@string/suite_permission"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="io.github.rushivangala.permission.SUITE" />
+
+    <queries>
+        <package android:name="io.github.rushivangala.daybook" />
+    </queries>
+
     <application
         android:allowBackup="false"
         android:dataExtractionRules="@xml/backup_rules"

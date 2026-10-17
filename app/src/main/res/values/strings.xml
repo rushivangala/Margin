@@ -2,4 +2,6 @@
 <resources>
     <string name="app_name">Margin</string>
     <string name="open_label">Read in Margin</string>
+    <string name="suite_permission">Add to the suite apps</string>
+    <string name="suite_permission_desc">Lets apps signed with the same key send notes to each other.</string>
 </resources>
