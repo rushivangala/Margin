@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shared widget type scale (same in every app of the suite). Colours are applied at runtime. -->
+<resources>
+    <style name="KitW" />
+    <style name="KitW.Label"><item name="android:textSize">12sp</item><item name="android:fontFamily">sans-serif-medium</item><item name="android:letterSpacing">0.04</item><item name="android:singleLine">true</item></style>
+    <style name="KitW.Title"><item name="android:textSize">16sp</item><item name="android:fontFamily">sans-serif-medium</item><item name="android:singleLine">true</item><item name="android:ellipsize">end</item></style>
+    <style name="KitW.Body"><item name="android:textSize">14sp</item><item name="android:singleLine">true</item><item name="android:ellipsize">end</item></style>
+    <style name="KitW.Meta"><item name="android:textSize">12sp</item><item name="android:fontFamily">monospace</item><item name="android:singleLine">true</item></style>
+    <style name="KitW.Hero"><item name="android:textSize">40sp</item><item name="android:fontFamily">sans-serif</item><item name="android:singleLine">true</item><item name="android:includeFontPadding">false</item></style>
+    <style name="KitW.Pill"><item name="android:textSize">13sp</item><item name="android:fontFamily">sans-serif-medium</item><item name="android:gravity">center</item><item name="android:paddingStart">14dp</item><item name="android:paddingEnd">14dp</item><item name="android:minHeight">36dp</item><item name="android:background">@drawable/kit_w_pill</item><item name="android:singleLine">true</item></style>
+    <dimen name="kit_w_pad">16dp</dimen>
+</resources>

@@ -1,0 +1,3 @@
+/* Margin — app layout on top of the shared kit (kit/kit.css). Colours are kit tokens only. */
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); }
+#app { position: fixed; inset: 0; display: flex; flex-direction: column; }
