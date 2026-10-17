@@ -296,6 +296,7 @@
 
   function libResults() {
     var list = filtered(), h = '';
+    if (!list.length && S.filter === 'reading' && !S.searching && continueBook()) return '';
     if (!list.length) {
       return '<div class="k-empty"><b>' + (S.searching ? 'No matches' : S.filter === 'finished' ? 'Nothing finished yet' : S.filter === 'reading' ? 'Not reading anything' : 'Empty shelf') + '</b>' +
         (S.searching ? 'Try a title, an author or a series.' : S.filter === 'reading' ? 'Open a book from <i>To read</i> or <i>All</i> and it shows up here.' : S.filter.indexOf('c:') === 0 ? 'Add books to this collection from a book’s menu (long-press a cover).' : S.filter === 'finished' ? 'Books you finish show up here.' : 'Nothing here yet.') + '</div>';
@@ -351,7 +352,11 @@
     if (f === 'series') return list.filter(function (b) { return b.series; }).sort(function (a, b) { return a.series.localeCompare(b.series) || (a.seriesIndex - b.seriesIndex) || byTitle(a, b); });
     if (f.indexOf('c:') === 0) { var c = f.slice(2); return list.filter(function (b) { return bookDoc(b.id).collections.indexOf(c) >= 0; }).sort(bySeries); }
     list = list.filter(function (b) { return shelfOf(b) === f; });
-    if (f === 'reading') return list.sort(function (a, b) { return bookDoc(b.id).opened - bookDoc(a.id).opened; });
+    if (f === 'reading') {
+      // The book in the "Continue reading" card is not repeated below it.
+      var cont = continueBook();
+      return list.filter(function (b) { return b !== cont; }).sort(function (a, b) { return bookDoc(b.id).opened - bookDoc(a.id).opened; });
+    }
     if (f === 'finished') return list.sort(function (a, b) { return bookDoc(b.id).finished - bookDoc(a.id).finished; });
     return list.sort(function (a, b) { return (lib().added[b.id] || 0) - (lib().added[a.id] || 0) || byTitle(a, b); });
   }
@@ -992,7 +997,12 @@
     },
     after: function () { var ka = $('#kitapp'); if (ka) Kit.bindAppearance(ka, function () { render(); }); },
   };
-  app.settingsSections = [];
+  app.settingsSections = [function () {
+    var st = settings(), fontName = { literata: 'Literata', figtree: 'Figtree', serif: 'Georgia', mono: 'Mono', book: 'Book’s own font' }[st.font] || st.font;
+    return capRow('Reading') + '<div class="k-group">' +
+      row({ a: 'aa', icon: ic('aa'), t: 'Text and layout', sub: fontName + ' · ' + st.size + ' px · ' + (st.mode === 'paged' ? 'pages' : 'scrolling') + (st.paper === 'sepia' ? ' · sepia' : ''), chev: true }) +
+      row({ icon: ic('pages'), t: 'Volume keys turn pages', btn: sw(st.volumeKeys !== false, 'toggle', 'Volume keys turn pages', ' data-k="volumeKeys"') }) + '</div>';
+  }];
   app.credits = [];
 
   views.folders = {
@@ -1076,11 +1086,11 @@
       ru.renderChrome();
     },
     jumpBack: function () { var ru = S.reader, p = ru.jumpBack; ru.jumpBack = null; if (p) ru.r ? ru.r.show(p.c, p) : ru.pager.go(p.c); ru.renderChrome(); },
-    aa: function () { S.sheet = { kind: 'aa', label: 'Reading settings' }; S.reader.chrome = false; S.reader.renderChrome(); renderOverlay(); },
+    aa: function () { S.sheet = { kind: 'aa', label: 'Reading settings' }; if (S.reader) { S.reader.chrome = false; S.reader.renderChrome(); } renderOverlay(); },
     set: function (d, el) {
       var st = settings(), v = el.getAttribute('data-num') ? +d.v : d.v;
       st[d.k] = v; touch('settings');
-      if (S.reader) S.reader.restyle();
+      if (S.reader) S.reader.restyle(); else if (top().s === 'settings') render();
       renderOverlay();
     },
     size: function (d) { var st = settings(); st.size = Math.max(12, Math.min(34, st.size + (+d.v))); touch('settings'); if (S.reader) S.reader.restyle(); renderOverlay(); },

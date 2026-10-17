@@ -97,4 +97,19 @@ module.exports = {
     assert.strictEqual(L.plural(2, 'book'), '2 books');
     assert.strictEqual(L.clean('  a   b\n'), 'a b');
   },
+
+  'search: phrases first, then paragraphs with every word'() {
+    const texts = [['The harbour smelled of tar and rain.', 'Rain on the tar roof of the harbour.'], ['Captain Rowe said “Grey Widow”.']];
+    const r = L.searchBook(texts, 'harbour smelled');
+    assert.strictEqual(r.length, 1);
+    assert.deepStrictEqual([r[0].c, r[0].p, r[0].o, r[0].len, r[0].exact], [0, 0, 4, 15, true]);
+    const loose = L.searchBook(texts, 'rain harbour');
+    assert.deepStrictEqual(loose.map((x) => [x.c, x.p, x.exact]), [[0, 0, false], [0, 1, false]]);
+    assert.strictEqual(L.searchBook(texts, 'grey widow')[0].snippet.hit, 'Grey Widow');
+    assert.strictEqual(L.searchBook(texts, '"grey widow"').length, 1, 'curly and straight quotes match');
+    assert.deepStrictEqual(L.searchBook(texts, '   '), []);
+    const raw = '  The  harbour\n smelled ';
+    assert.strictEqual(L.rawOffset(raw, L.clean(raw).indexOf('smelled')), raw.indexOf('smelled'));
+    assert.strictEqual(L.wordCount([['Åsa sa: – Här är tjugo-två ord.']]), 6);
+  },
 };

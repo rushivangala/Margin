@@ -295,6 +295,33 @@ const scenarios = {
     await ctx.close();
   },
 
+  async 'reader search in book'(b, port, scheme) {
+    const { page, ctx, errors } = await newPage(b, port, scheme);
+    const id = await openBook(page, 'The Keeper of Harwick Light');
+    await page.waitForFunction((i) => window.app.bookDoc(i).lens, id, { timeout: 8000 });
+    const words = await page.evaluate((i) => window.app.bookDoc(i).words, id);
+    check(words > 800, 'words counted: ' + words);
+    await tapReader(page, 200, 450);
+    await page.click('[data-a="findInBook"]');
+    await page.fill('#findq', 'grey widow');
+    await page.waitForSelector('.res');
+    await shot(page, 'reader-search-' + scheme);
+    const n = await page.$$eval('.res', (els) => els.length);
+    check(n >= 3, 'search finds the Grey Widow several times, got ' + n);
+    await page.click('.res[data-i="2"]');
+    await page.waitForTimeout(600);
+    const marked = await frame(page).evaluate(() => CSS.highlights.has('mh-find') && [...CSS.highlights.get('mh-find')][0].toString());
+    check(/grey widow/i.test(marked || ''), 'the hit is marked: ' + marked);
+    const vis = await frame(page).evaluate(() => { const r = [...CSS.highlights.get('mh-find')][0].getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; });
+    check(vis, 'the hit is on screen');
+    // exact percentages once the index is built
+    const f = await page.evaluate(() => window.app.S.reader.fraction());
+    check(f > 0.3 && f < 0.9, 'fraction from the index: ' + f);
+    await shot(page, 'reader-search-hit-' + scheme);
+    check(!errors.length, 'no page errors: ' + errors.join(' | '));
+    await ctx.close();
+  },
+
   async 'settings'(b, port, scheme) {
     const { page, ctx, errors } = await newPage(b, port, scheme);
     await page.click('[data-a="go"][data-to="settings"]');

@@ -305,6 +305,57 @@
     return out;
   }
 
+  // ---------------------------------------------------------------- search
+  /* Offset in the raw block text for an offset in its cleaned text (whitespace runs collapsed). */
+  function rawOffset(raw, cleanOff) {
+    var n = 0, i = 0, inSpace = true; // leading whitespace is trimmed by clean()
+    for (; i < raw.length; i++) {
+      var ws = /[\s\u00a0\u200b]/.test(raw[i]);
+      if (ws) { if (!inSpace) { if (n === cleanOff) return i; n++; inSpace = true; } continue; }
+      if (n === cleanOff) return i;
+      n++; inSpace = false;
+    }
+    return raw.length;
+  }
+  function fold(s) { return String(s || '').toLowerCase().replace(/[’‘`]/g, "'").replace(/[“”«»„]/g, '"').replace(/[‐-―]/g, '-'); }
+
+  /* Searches a book's text index (texts[c][p] = cleaned block text). Exact phrases come first,
+     then paragraphs that contain every word. Returns [{c, p, o, len, snippet, exact}]. */
+  function searchBook(texts, query, limit) {
+    limit = limit || 300;
+    var q = fold(query).trim();
+    if (!q) return [];
+    var words = q.split(/\s+/).filter(function (w) { return w.length > 1 || q.length === 1; });
+    var hits = [], loose = [];
+    for (var c = 0; c < texts.length; c++) {
+      var ch = texts[c] || [];
+      for (var p = 0; p < ch.length; p++) {
+        var t = fold(ch[p]), from = 0, i, any = false;
+        while ((i = t.indexOf(q, from)) >= 0 && hits.length < limit) { hits.push({ c: c, p: p, o: i, len: q.length, snippet: snippet(ch[p], i, q.length), exact: true }); from = i + q.length; any = true; }
+        if (!any && words.length > 1 && loose.length < limit && words.every(function (w) { return t.indexOf(w) >= 0; })) {
+          var first = t.indexOf(words[0]);
+          loose.push({ c: c, p: p, o: first, len: words[0].length, snippet: snippet(ch[p], first, words[0].length), exact: false });
+        }
+      }
+      if (hits.length >= limit) break;
+    }
+    return hits.concat(loose).slice(0, limit);
+  }
+  function snippet(text, at, len) {
+    var a = Math.max(0, at - 60), b = Math.min(text.length, at + len + 90);
+    while (a > 0 && a > at - 80 && text[a - 1] !== ' ') a--;
+    while (b < text.length && b < at + len + 110 && text[b] !== ' ') b++;
+    return { pre: (a > 0 ? '…' : '') + text.slice(a, at), hit: text.slice(at, at + len), post: text.slice(at + len, b) + (b < text.length ? '…' : '') };
+  }
+
+  /* Words in a cleaned text (letters, including å ä ö and other accented letters). */
+  function words(text) { return String(text || '').match(/[\p{L}\p{M}][\p{L}\p{M}'’-]*/gu) || []; }
+  function wordCount(texts) {
+    var n = 0;
+    (texts || []).forEach(function (ch) { (ch || []).forEach(function (t) { n += words(t).length; }); });
+    return n;
+  }
+
   // ---------------------------------------------------------------- formatting
   function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
   function minutes(m) {
@@ -320,6 +371,7 @@
     lensOf: lensOf, fractionAt: fractionAt, positionAt: positionAt, comparePos: comparePos, charsBefore: charsBefore,
     esc: esc, textChapters: textChapters, markdown: markdown, markdownChapters: markdownChapters, chapterDoc: chapterDoc, textChapterHtml: textChapterHtml,
     pdfParagraphs: pdfParagraphs, reflowLines: reflowLines,
+    rawOffset: rawOffset, fold: fold, searchBook: searchBook, snippet: snippet, words: words, wordCount: wordCount,
     plural: plural, minutes: minutes, dayKey: dayKey,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Logic = api;

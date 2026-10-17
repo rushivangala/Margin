@@ -76,7 +76,7 @@ input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3
 input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; margin-top: -7px; border-radius: 10px; background: var(--pri); border: 3px solid var(--low); }
 .ribbon { position: absolute; top: 0; right: calc(18px + var(--kit-right)); width: 18px; height: calc(var(--kit-top) + 34px); background: var(--err); z-index: 3; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%); pointer-events: none; }
 .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--paper-muted, var(--muted)); font-size: 14px; }
-.back-pill { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(44px + var(--kit-bottom)); z-index: 4; height: 40px; padding: 0 16px; border-radius: 20px; background: var(--ink); color: var(--bg); display: inline-flex; align-items: center; gap: 8px; font: 600 14px var(--sans); box-shadow: var(--shadow); }
+.back-pill { white-space: nowrap; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(44px + var(--kit-bottom)); z-index: 4; height: 40px; padding: 0 16px; border-radius: 20px; background: var(--ink); color: var(--bg); display: inline-flex; align-items: center; gap: 8px; font: 600 14px var(--sans); box-shadow: var(--shadow); }
 .back-pill .k-ic { width: 18px; height: 18px; }
 
 /* selection toolbar and popovers */
