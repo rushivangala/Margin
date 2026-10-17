@@ -99,6 +99,22 @@ abstract class CheckNoInternet : DefaultTask() {
     }
 }
 
+// The JavaScript unit tests (reading logic: positions, text books, recaps, flashcards …) run
+// with plain node when it is installed, as on the GitHub runners.
+val jsTest = tasks.register<Exec>("jsTest") {
+    description = "Runs test/run.js with node"
+    workingDir = rootDir
+    commandLine("node", "test/run.js")
+    onlyIf {
+        try {
+            ProcessBuilder("node", "--version").start().waitFor() == 0
+        } catch (e: Exception) {
+            logger.warn("node not found: skipping the JavaScript unit tests")
+            false
+        }
+    }
+}
+
 androidComponents {
     onVariants(selector().withBuildType("release")) { variant ->
         val cap = variant.name.replaceFirstChar { it.uppercase() }
@@ -110,6 +126,7 @@ androidComponents {
             dependsOn(check)
             // A release is only built when the unit tests pass.
             dependsOn("test${cap}UnitTest")
+            dependsOn(jsTest)
         }
     }
 }
